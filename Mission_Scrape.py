@@ -1,3 +1,4 @@
+import datetime as dt
 
 #import dependencies
 from bs4 import BeautifulSoup as bs
@@ -5,7 +6,9 @@ from splinter import Browser
 import pandas as pd
 from webdriver_manager.chrome import ChromeDriverManager
 
+
 def scrape():
+
     #pointing to the directory where chromedriver exists
     executable_path = {'executable_path': ChromeDriverManager().install()}
     browser = Browser("chrome", **executable_path, headless = False)
@@ -20,7 +23,6 @@ def scrape():
 
     news_title = soup.find("div",class_="content_title").text
     news_paragraph = soup.find("div", class_="article_teaser_body").text
-
 
     # ### JPL Mars Space Images - Featured Image
 
@@ -38,7 +40,7 @@ def scrape():
     img_result = soup.find('img', class_="headerimage fade-in")['src']
 
     img_url = img_result.replace("background-image: url('","").replace("');","")
-    featured_image_url = "https://spaceimages-mars.com/{img_url}"
+    featured_image = f"https://spaceimages-mars.com/{img_url}"
 
     # ### Mars Facts
 
@@ -53,11 +55,10 @@ def scrape():
     df = tables[1]
     df.columns = ["Description","Value"]
     idx_df = df.set_index("Description")
-    idx_df
+    
 
     #Save table string
-    mars_df = df.to_html(classes = 'table table-striped')
-
+    mars_facts = idx_df.to_html(classes = 'table table-striped')
 
     # ### Mars Hemispher
 
@@ -66,11 +67,11 @@ def scrape():
     browser.visit(hemi_url)
 
     hemisphere_html = browser.html
-    soup = bs(hemispere_html, 'html.parser')
+    soup = bs(hemisphere_html, 'html.parser')
 
     items = soup.find_all('div', class_='item')
 
-    hemisphere_image_urls = []
+    hemispheres_list_of_dicts = []
 
     hemispheres_main_url = 'https://marshemispheres.com/'
 
@@ -88,20 +89,21 @@ def scrape():
 
         image_url = hemispheres_main_url + soup.find('img', class_='wide-image')['src']
 
-        hemisphere_image_urls.append({"Title" : title, "Image_URL" : image_url})
-        
-        
+        hemispheres_list_of_dicts.append({"title" : title, "img_url" : image_url})
 
+
+    scraped_data = {
+        "news_title": news_title,
+        "news_paragraph": news_paragraph,
+        "featured_image": featured_image,
+        "facts": mars_facts,
+        "hemispheres": hemispheres_list_of_dicts,
+        "last_modified": dt.datetime.now()
+    }
     browser.quit()
 
-    new_dict = {
-        "news_t": news_title,
-        "news_p": news_paragraph,
-        "mars_f": featured_image_url,
 
-    }
-
-    return new_dict
+    return scraped_data
 
 
 
